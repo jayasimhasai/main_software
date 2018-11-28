@@ -1,0 +1,62 @@
+diff --git a/__pycache__/logger.cpython-35.pyc b/__pycache__/logger.cpython-35.pyc
+index 9ba605a..f27438d 100644
+Binary files a/__pycache__/logger.cpython-35.pyc and b/__pycache__/logger.cpython-35.pyc differ
+diff --git a/aws/__pycache__/aws_interface.cpython-35.pyc b/aws/__pycache__/aws_interface.cpython-35.pyc
+index d648bc4..66005b1 100644
+Binary files a/aws/__pycache__/aws_interface.cpython-35.pyc and b/aws/__pycache__/aws_interface.cpython-35.pyc differ
+diff --git a/main.py b/main.py
+index 02784bc..c6d1541 100644
+--- a/main.py
++++ b/main.py
+@@ -202,7 +202,8 @@ class Main:
+ 
+         # evaluate the critical condition checklist
+         # send the data to queue
+-        if critical_check.values().count("OK") < 5:
++        
++        if sum( x == "OK" for x in critical_check.values() ) < 5:
+             track_critical_condition(critical_check)
+             self.Data_Queue.put(data)
+         else:
+diff --git a/update_daemon.py b/update_daemon.py
+index a0f2d52..d352812 100644
+--- a/update_daemon.py
++++ b/update_daemon.py
+@@ -7,26 +7,21 @@ import os
+ 
+ 
+ def do_update(client, userdata, message):
+-	patch_location = message.payload.url
+-	file_name = message.payload.file_name
+-	parser = ConfigParser()
+-	parser.read('config_files/device.conf')
+-	user_id = parser.get('device', 'userId')
+-
+-	PARAMS = { 	'user_id':user_id,
+-			'device_type':"aeroasis_device"
+-				}
+-
+-	r = requests.get(url=patch_location, params=PARAMS, stream=True)
+-	with open("file_name", 'wb') as f:
+-		for chunk in r.iter_content(chunk_size=1024):
+-			if chunk:
+-				f.write(chunk)
++	file_name = "update.patch"
++	URL = "https://r65hlx6e9a.execute-api.us-west-2.amazonaws.com/beta/get-system-update"
++	r = requests.get(url=URL)
++	data = r.json()
++	file = json.loads(data['body'])['Body']['data']
++	strf = ''.join(chr(i) for i in file)
++	
++
++	f = open(file_name,"w")
++	f.write(strf)
++	f.close()
+ 	time.sleep(5)
+ 
+ 	p = patch.fromfile("".format(file_name))
+ 	p.apply()
+-
+ 	os.system('reboot')
+ 
+ 
